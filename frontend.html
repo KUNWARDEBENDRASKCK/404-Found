@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404-Found | AI Misinformation Detector</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: #030712;
+      color: white;
+      min-height: 100vh;
+      padding: 40px 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(rgba(0,0,0,0.82), rgba(0,0,0,0.86)),
+        url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1600&auto=format&fit=crop')
+        center/cover no-repeat;
+      filter: brightness(0.45);
+      z-index: -2;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at top left, rgba(0,255,255,0.08), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(255,0,100,0.08), transparent 30%);
+      z-index: -1;
+    }
+
+    .glow {
+      position: fixed;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      filter: blur(120px);
+      z-index: -1;
+    }
+
+    .glow1 { background: rgba(0,255,255,0.10); top: -100px; left: -100px; }
+    .glow2 { background: rgba(255,0,100,0.08); bottom: -100px; right: -100px; }
+
+    .container { max-width: 1400px; margin: auto; }
+
+    .title { text-align: center; margin-bottom: 60px; }
+
+    .title h1 {
+      font-size: 78px;
+      background: linear-gradient(to right, #38bdf8, #ffffff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+    }
+
+    .subtitle {
+      display: inline-block;
+      padding: 14px 22px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #94a3b8;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
+    .title p {
+      color: #94a3b8;
+      max-width: 850px;
+      margin: 30px auto 0;
+      line-height: 1.9;
+      font-size: 18px;
+    }
+
+    /* CONFIG BAR */
+    .config-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      background: rgba(15,23,42,0.72);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 14px 20px;
+    }
+
+    .config-bar label { color: #94a3b8; font-size: 14px; white-space: nowrap; }
+
+    .config-bar input {
+      flex: 1;
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 8px 14px;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .config-bar input:focus { border-color: #38bdf8; }
+
+    .main-box {
+      background: rgba(15,23,42,0.82);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 35px;
+      padding: 40px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.45);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 30px;
+    }
+
+    .panel {
+      background: rgba(15,23,42,0.72);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 30px;
+      padding: 30px;
+      backdrop-filter: blur(12px);
+      transition: 0.3s;
+    }
+
+    .panel:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56,189,248,0.35);
+      box-shadow: 0 0 25px rgba(56,189,248,0.08);
+    }
+
+    .panel-title { font-size: 34px; margin-bottom: 25px; color: #38bdf8; }
+
+    textarea {
+      width: 100%;
+      height: 260px;
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 24px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      resize: none;
+      transition: 0.3s;
+    }
+
+    textarea:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 20px rgba(56,189,248,0.18);
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 25px;
+      padding: 18px;
+      border: none;
+      border-radius: 18px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(to right, #0ea5e9, #38bdf8);
+      transition: 0.3s;
+      position: relative;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(56,189,248,0.25); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .result {
+      margin-top: 30px;
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 25px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 14px 24px;
+      border-radius: 14px;
+      font-weight: bold;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+
+    .score-section { margin-top: 20px; }
+
+    .score-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: #ddd;
+    }
+
+    .progress-bg {
+      width: 100%;
+      height: 16px;
+      background: #111827;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .progress-red {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(to right, #ff004c, #ff4d4d);
+      transition: width 0.6s ease;
+    }
+
+    .progress-green {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(to right, #00c853, #58ff8a);
+      transition: width 0.6s ease;
+    }
+
+    .reason-box {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 18px;
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .reason-box h3 { margin-bottom: 12px; color: #38bdf8; }
+    .reason-box p { line-height: 1.8; color: #ccc; }
+
+    /* Tabs for image panel */
+    .tab-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      padding: 8px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .tab-btn.active {
+      background: rgba(56,189,248,0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    input[type="file"] {
+      width: 100%;
+      height: 120px;
+      padding: 18px 22px;
+      border-radius: 24px;
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="file"]::file-selector-button {
+      background: linear-gradient(to right, #0ea5e9, #38bdf8);
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      margin-right: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    input[type="file"]::file-selector-button:hover { opacity: 0.9; }
+
+    .preview-image {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border-radius: 22px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    /* OCR result */
+    .ocr-output {
+      margin-top: 20px;
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 20px;
+      color: #ccc;
+      line-height: 1.8;
+      font-size: 15px;
+      min-height: 80px;
+      display: none;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+      gap: 25px;
+      margin-top: 60px;
+    }
+
+    .feature {
+      background: rgba(15,23,42,0.72);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 30px;
+      border-radius: 25px;
+      transition: 0.3s;
+    }
+
+    .feature:hover {
+      transform: translateY(-5px);
+      border-color: rgba(56,189,248,0.35);
+      box-shadow: 0 0 20px rgba(56,189,248,0.08);
+    }
+
+    .feature h3 { margin-bottom: 16px; font-size: 24px; }
+    .feature p { color: #94a3b8; line-height: 1.8; }
+
+    .footer { text-align: center; margin-top: 60px; color: #94a3b8; line-height: 1.8; }
+
+    .blink { animation: blinkEffect 0.8s infinite; }
+
+    @keyframes blinkEffect {
+      0%   { opacity: 1; }
+      50%  { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+
+<body>
+
+  <div class="glow glow1"></div>
+  <div class="glow glow2"></div>
+
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="title">
+      <h1>404-Found</h1>
+      <div class="subtitle">AI-Powered Misinformation Detector</div>
+      <p>
+        Detect fake news and deepfakes in real time using advanced NLP and computer vision.
+        Built at HackIndia AI &amp; DeepTech Hackathon 2026.
+      </p>
+    </div>
+
+    <!-- CONFIG BAR: set backend URL without touching code -->
+    <div class="config-bar">
+      <label for="apiBaseUrl">🔗 Backend URL:</label>
+      <input
+        type="text"
+        id="apiBaseUrl"
+        value="http://127.0.0.1:8000"
+        placeholder="http://127.0.0.1:8000"
+      />
+    </div>
+
+    <div class="main-box">
+      <div class="dashboard-grid">
+
+        <!-- FAKE NEWS PANEL -->
+        <div class="panel">
+          <h2 class="panel-title">📰 Fake News Detector</h2>
+
+          <textarea
+            id="newsInput"
+            placeholder="Paste news article or headline here..."
+          ></textarea>
+
+          <button class="btn" id="newsBtn" onclick="analyzeNews()">
+            Analyze News
+          </button>
+
+          <div class="result" id="newsResult">
+            <div class="status" id="status" style="background:rgba(255,255,255,0.06);color:#ddd;">
+              Waiting for Analysis
+            </div>
+
+            <div class="score-section">
+              <div class="score-top">
+                <span>Fake Probability</span>
+                <span id="fakeScore">0%</span>
+              </div>
+              <div class="progress-bg">
+                <div class="progress-red" id="fakeBar"></div>
+              </div>
+            </div>
+
+            <div class="score-section">
+              <div class="score-top">
+                <span>Real Probability</span>
+                <span id="realScore">0%</span>
+              </div>
+              <div class="progress-bg">
+                <div class="progress-green" id="realBar"></div>
+              </div>
+            </div>
+
+            <div class="reason-box">
+              <h3>AI Explanation</h3>
+              <p id="reasonText">Waiting for AI analysis...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMAGE PANEL -->
+        <div class="panel">
+          <h2 class="panel-title">🖼 Image Analysis</h2>
+
+          <!-- Tabs -->
+          <div class="tab-row">
+            <button class="tab-btn active" onclick="switchTab('deepfake')">Deepfake Detector</button>
+            <button class="tab-btn"        onclick="switchTab('ocr')">OCR Text Extractor</button>
+          </div>
+
+          <!-- DEEPFAKE TAB -->
+          <div class="tab-content active" id="tab-deepfake">
+
+            <input type="file" id="imageInput" accept=".jpg,.jpeg,.png" />
+
+            <img id="previewImage" class="preview-image" alt="Preview" />
+
+            <button class="btn" id="deepfakeBtn" onclick="analyzeImage()">
+              Analyze Image
+            </button>
+
+            <div class="result" id="imageResult">
+              <div class="status" id="imagePrediction" style="background:rgba(255,255,255,0.06);color:#ddd;">
+                Waiting for Analysis
+              </div>
+
+              <div class="score-section">
+                <div class="score-top">
+                  <span>Deepfake Probability</span>
+                  <span id="deepfakeScore">0%</span>
+                </div>
+                <div class="progress-bg">
+                  <div class="progress-red" id="deepfakeBar"></div>
+                </div>
+              </div>
+
+              <div class="score-section">
+                <div class="score-top">
+                  <span>Real Image Probability</span>
+                  <span id="realImageScore">0%</span>
+                </div>
+                <div class="progress-bg">
+                  <div class="progress-green" id="realImageBar"></div>
+                </div>
+              </div>
+
+              <div class="reason-box">
+                <h3>AI Explanation</h3>
+                <p id="imageReason">Waiting for AI analysis...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- OCR TAB -->
+          <div class="tab-content" id="tab-ocr">
+
+            <input type="file" id="ocrInput" accept=".jpg,.jpeg,.png" />
+
+            <img id="ocrPreview" class="preview-image" alt="OCR Preview" />
+
+            <button class="btn" id="ocrBtn" onclick="runOCR()">
+              Extract Text
+            </button>
+
+            <div class="ocr-output" id="ocrOutput">
+              Extracted text will appear here...
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FEATURES -->
+      <div class="features">
+        <div class="feature">
+          <h3>🧠 NLP Intelligence</h3>
+          <p>Advanced language models analyze suspicious linguistic patterns and misinformation signals.</p>
+        </div>
+        <div class="feature">
+          <h3>🖼 Deepfake Detection</h3>
+          <p>Computer Vision pipeline identifies manipulated and AI-generated media content.</p>
+        </div>
+        <div class="feature">
+          <h3>🔍 OCR Extraction</h3>
+          <p>Extract and analyze text embedded in images for further misinformation checks.</p>
+        </div>
+        <div class="feature">
+          <h3>⚡ Real-Time AI</h3>
+          <p>Fast multi-modal inference system powered by modern AI infrastructure.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <p>Built at HackIndia AI &amp; DeepTech Hackathon 2026</p>
+      <p>Team 404-Found</p>
+    </div>
+
+  </div>
+
+  <script>
+
+    // ==============================
+    // HELPERS
+    // ==============================
+
+    function getBaseUrl() {
+      return document.getElementById('apiBaseUrl').value.trim().replace(/\/$/, '');
+    }
+
+    function setLoading(btnId, loading, defaultText) {
+      const btn = document.getElementById(btnId);
+      if (loading) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+      } else {
+        btn.disabled = false;
+        btn.innerText = defaultText;
+      }
+    }
+
+    // ==============================
+    // TAB SWITCHER
+    // ==============================
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', ['deepfake','ocr'][i] === tab);
+      });
+      document.getElementById('tab-deepfake').classList.toggle('active', tab === 'deepfake');
+      document.getElementById('tab-ocr').classList.toggle('active', tab === 'ocr');
+    }
+
+    // ==============================
+    // IMAGE PREVIEW
+    // ==============================
+
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const preview = document.getElementById('previewImage');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+      }
+    });
+
+    document.getElementById('ocrInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const preview = document.getElementById('ocrPreview');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+      }
+    });
+
+    // ==============================
+    // NEWS ANALYSIS
+    // ==============================
+
+    async function analyzeNews() {
+      const text = document.getElementById('newsInput').value.trim();
+
+      if (text.length < 20) {
+        alert('Please enter at least 20 characters of news text.');
+        return;
+      }
+
+      setLoading('newsBtn', true, 'Analyze News');
+
+      try {
+        const response = await fetch(`${getBaseUrl()}/predict-news`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || `Server error ${response.status}`);
+        }
+
+        const data = await response.json();
+        const credibility = data.credibility_score;
+        const fake = 100 - credibility;
+        const real = credibility;
+
+        document.getElementById('fakeScore').innerText = fake + '%';
+        document.getElementById('realScore').innerText = real + '%';
+        document.getElementById('fakeBar').style.width  = fake + '%';
+        document.getElementById('realBar').style.width  = real + '%';
+
+        const status = document.getElementById('status');
+
+        if (data.prediction.toUpperCase() === 'FAKE') {
+          status.innerText = '⚠ Fake News Detected';
+          status.style.background = 'rgba(255,0,0,0.18)';
+          status.style.color = '#ff7070';
+          status.classList.add('blink');
+        } else {
+          status.innerText = '✔ Real News';
+          status.style.background = 'rgba(0,255,100,0.18)';
+          status.style.color = '#58ff8a';
+          status.classList.remove('blink');
+        }
+
+        document.getElementById('reasonText').innerText = data.reason;
+
+      } catch (error) {
+        alert('Error: ' + error.message);
+        console.error(error);
+      } finally {
+        setLoading('newsBtn', false, 'Analyze News');
+      }
+    }
+
+    // ==============================
+    // DEEPFAKE ANALYSIS
+    // ==============================
+
+    async function analyzeImage() {
+      const file = document.getElementById('imageInput').files[0];
+
+      if (!file) {
+        alert('Please select an image first.');
+        return;
+      }
+
+      setLoading('deepfakeBtn', true, 'Analyze Image');
+
+      // Reset UI
+      const prediction = document.getElementById('imagePrediction');
+      prediction.innerText = 'Analyzing Image...';
+      prediction.style.background = 'rgba(255,255,255,0.08)';
+      prediction.style.color = '#ffffff';
+      prediction.classList.remove('blink');
+      document.getElementById('deepfakeScore').innerText = '0%';
+      document.getElementById('realImageScore').innerText = '0%';
+      document.getElementById('deepfakeBar').style.width = '0%';
+      document.getElementById('realImageBar').style.width = '0%';
+      document.getElementById('imageReason').innerText = 'AI is processing image patterns...';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`${getBaseUrl()}/detect-deepfake`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || `Server error ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // confidence comes as "85.23%" string — parse it
+        const confidence = parseFloat(data.confidence);
+        let fake, real;
+
+        // FIX: backend now returns "Deepfake" or "Real Image"
+        if (data.prediction === 'Deepfake') {
+          fake = confidence;
+          real = 100 - confidence;
+          prediction.innerText = '⚠ Deepfake Detected';
+          prediction.style.background = 'rgba(255,0,0,0.18)';
+          prediction.style.color = '#ff7070';
+          prediction.classList.add('blink');
+          document.getElementById('imageReason').innerText =
+            'AI detected synthetic manipulation patterns and abnormal visual inconsistencies.';
+        } else {
+          real = confidence;
+          fake = 100 - confidence;
+          prediction.innerText = '✔ Real Image';
+          prediction.style.background = 'rgba(0,255,100,0.18)';
+          prediction.style.color = '#58ff8a';
+          prediction.classList.remove('blink');
+          document.getElementById('imageReason').innerText =
+            'AI detected authentic visual patterns with low manipulation probability.';
+        }
+
+        document.getElementById('deepfakeScore').innerText  = fake.toFixed(1) + '%';
+        document.getElementById('realImageScore').innerText = real.toFixed(1) + '%';
+        document.getElementById('deepfakeBar').style.width  = fake + '%';
+        document.getElementById('realImageBar').style.width = real + '%';
+
+      } catch (error) {
+        prediction.innerText = 'Analysis Failed';
+        prediction.style.background = 'rgba(255,0,0,0.18)';
+        prediction.style.color = '#ff7070';
+        document.getElementById('imageReason').innerText = 'Could not connect to backend. ' + error.message;
+        console.error(error);
+      } finally {
+        setLoading('deepfakeBtn', false, 'Analyze Image');
+      }
+    }
+
+    // ==============================
+    // OCR
+    // ==============================
+
+    async function runOCR() {
+      const file = document.getElementById('ocrInput').files[0];
+
+      if (!file) {
+        alert('Please select an image first.');
+        return;
+      }
+
+      setLoading('ocrBtn', true, 'Extract Text');
+
+      const output = document.getElementById('ocrOutput');
+      output.style.display = 'block';
+      output.innerText = '🔍 Extracting text...';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`${getBaseUrl()}/extract-text`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || `Server error ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.extracted_text === 'No text found in image') {
+          output.innerText = '⚠ No text detected in this image.';
+        } else {
+          output.innerText = `📄 Extracted Text (${data.word_count} words):\n\n${data.extracted_text}`;
+        }
+
+      } catch (error) {
+        output.innerText = 'OCR failed: ' + error.message;
+        console.error(error);
+      } finally {
+        setLoading('ocrBtn', false, 'Extract Text');
+      }
+    }
+
+  </script>
+
+</body>
+</html>
